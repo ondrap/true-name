@@ -93,7 +93,7 @@ decNames dec = case dec of
 #endif
 
 #if MIN_VERSION_template_haskell(2,9,0)
-    TySynInstD _ tse -> tseNames tse
+    TySynInstD tse -> tseNames tse
     RoleAnnotD _ _ -> []
 #else
     TySynInstD _ ts t -> (typNames =<< ts) ++ typNames t
@@ -108,6 +108,7 @@ decNames dec = case dec of
 #if MIN_VERSION_template_haskell(2,10,0)
     DefaultSigD _ _ -> []
 #endif
+    ImplicitParamBindD _ _ -> []
 {- }}} -}
 
 datatypeNames :: Cxt -> [Con] -> [Name]
@@ -121,7 +122,11 @@ derivNames derivs = predNames =<<
 
 #if MIN_VERSION_template_haskell(2,9,0)
 tseNames :: TySynEqn -> [Name]
-tseNames (TySynEqn ts t) = (typNames =<< ts) ++ typNames t
+tseNames (TySynEqn (Just ts) t1 t2) = (vbName <$> ts) ++ typNames t1 ++ typNames t2
+  where
+    vbName (PlainTV n) = n
+    vbName (KindedTV n _) = n
+tseNames (TySynEqn Nothing t1 t2) = typNames t1 ++ typNames t2
 #endif
 
 predNames :: Pred -> [Name]{- {{{ -}
@@ -170,6 +175,8 @@ typNames typ = case typ of
 #if MIN_VERSION_template_haskell(2,12,0)
     UnboxedSumT _arity -> []
 #endif
+    AppKindT _ _ -> []
+    ImplicitParamT _ _ -> []
 {- }}} -}
 
 infoNames :: Info -> [Name]{- {{{ -}
